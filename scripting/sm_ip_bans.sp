@@ -9,7 +9,7 @@ public Plugin myinfo =
 	name = "IP Bans Syncer",
 	author = "AdRiAnIlloO",
 	description = "Syncs native SRCDS IP bans with a SQL database",
-	version = "1.0"
+	version = "1.1"
 }
 
 #define DATABASE_CONFIG_NAME "ip_bans"
@@ -59,15 +59,14 @@ Database gDatabase;
 
 public void OnPluginStart()
 {
-	RegisterIPBanListener();
+	AddIPBanListener();
 	AddCommandListener(CmdUnbanIP, "removeip");
 }
 
-bool IsDatabaseSQLite()
+void AddIPBanListener()
 {
-	char driver[8];
-	gDatabase.Driver.GetIdentifier(driver, sizeof(driver));
-	return StrEqual(driver, "sqlite");
+	AddCommandListener(CmdBanIP, "addip");
+	AddCommandListener(CmdBanIP, "banip");
 }
 
 Action CmdBanIP(int client, const char[] command, int argsCount)
@@ -80,7 +79,7 @@ Action CmdBanIP(int client, const char[] command, int argsCount)
 	{
 		int minutes = StringToInt(time);
 
-		if (IPToLong(ip) < 1)
+		if (IPToLong(ip) == 0)
 		{
 			ReplyToCommand(client, IP_COMMAND_SLOT_WARNING(ban));
 			return Plugin_Handled;
@@ -122,7 +121,7 @@ Action CmdUnbanIP(int client, const char[] command, int argsCount)
 
 	if (GetCmdArg(1, ip, sizeof(ip)) > 0)
 	{
-		if (IPToLong(ip) < 1)
+		if (IPToLong(ip) == 0)
 		{
 			ReplyToCommand(client, IP_COMMAND_SLOT_WARNING(unban));
 			return Plugin_Handled;
@@ -147,6 +146,13 @@ public void OnMapEnd()
 {
 	delete gDatabase;
 	gDatabase = null;
+}
+
+bool IsDatabaseSQLite()
+{
+	char driver[8];
+	gDatabase.Driver.GetIdentifier(driver, sizeof(driver));
+	return StrEqual(driver, "sqlite");
 }
 
 void OnDatabaseConnectFinished(Database database, const char[] error, any data)
@@ -210,6 +216,7 @@ void OnIPBansLoaded(Database database, DBResultSet results, const char[] error, 
 	}
 
 	RemoveCommandListener(CmdBanIP, "addip");
+	RemoveCommandListener(CmdBanIP, "banip");
 
 	while (results.FetchRow())
 	{
@@ -220,16 +227,11 @@ void OnIPBansLoaded(Database database, DBResultSet results, const char[] error, 
 		if (expireTimestamp < 1 || (timeLeft = (expireTimestamp - GetTime()) / 60) > 0)
 		{
 			ServerCommand("addip %i %s", timeLeft, ip);
+			ServerExecute();
 		}
 	}
 
-	RequestFrame(RegisterIPBanListener);
-}
-
-void RegisterIPBanListener()
-{
-	AddCommandListener(CmdBanIP, "addip");
-	AddCommandListener(CmdBanIP, "banip");
+	AddIPBanListener();
 }
 
 void OnQueryCompleted(Database database, DBResultSet results, const char[] error, any data)
