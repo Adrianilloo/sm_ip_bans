@@ -95,13 +95,13 @@ Action CmdBanIP(int client, const char[] command, int argsCount)
 
 			if (isSQLite)
 			{
-				FormatEx(query[len], sizeof(query) - len, SQLITE_CURRENT_DATE_EXPRESSION
+				gDatabase.Format(query[len], sizeof(query) - len, SQLITE_CURRENT_DATE_EXPRESSION
 					... ", DATETIME(%i, 'UNIXEPOCH')) ON CONFLICT (ip) DO UPDATE SET country = excluded.country,"
 					... " creationDate = excluded.creationDate, expireDate = excluded.expireDate;", expireTimestamp);
 			}
 			else
 			{
-				FormatEx(query[len], sizeof(query) - len, MYSQL_CURRENT_DATE_EXPRESSION
+				gDatabase.Format(query[len], sizeof(query) - len, MYSQL_CURRENT_DATE_EXPRESSION
 					... ", FROM_UNIXTIME(%i)) ON DUPLICATE KEY UPDATE country = VALUES (country),"
 					... " creationDate = VALUES (creationDate), expireDate = VALUES (expireDate);", expireTimestamp);
 			}
@@ -168,13 +168,13 @@ void OnDatabaseConnectFinished(Database database, const char[] error, any data)
 	gDatabase = database;
 	char query[SQL_MAX_QUERY_SIZE], separator[3];
 	bool isSQLite = IsDatabaseSQLite();
-	int len = FormatEx(query, sizeof(query), "CREATE TABLE IF NOT EXISTS IPBan"
+	int len = gDatabase.Format(query, sizeof(query), "CREATE TABLE IF NOT EXISTS IPBan"
 		... " (id INTEGER %s PRIMARY KEY NOT NULL, ip VARCHAR (%i) UNIQUE NOT NULL, country ",
 		isSQLite ? "" : "AUTO_INCREMENT", MAX_IP_SIZE - 1);
 
 	if (isSQLite)
 	{
-		len += FormatEx(query[len], sizeof(query) - len, "VARCHAR (%i", sizeof(gGeoIPCountryCodes[]) - 1);
+		len += gDatabase.Format(query[len], sizeof(query) - len, "VARCHAR (%i", sizeof(gGeoIPCountryCodes[]) - 1);
 	}
 	else
 	{
@@ -182,7 +182,7 @@ void OnDatabaseConnectFinished(Database database, const char[] error, any data)
 
 		for (int i; i < sizeof(gGeoIPCountryCodes); separator = ", ", ++i)
 		{
-			len += FormatEx(query[len], sizeof(query) - len, "%s'%s'", separator, gGeoIPCountryCodes[i]);
+			len += gDatabase.Format(query[len], sizeof(query) - len, "%s'%s'", separator, gGeoIPCountryCodes[i]);
 		}
 	}
 
@@ -192,17 +192,17 @@ void OnDatabaseConnectFinished(Database database, const char[] error, any data)
 
 	if (isSQLite)
 	{
-		FormatEx(query[len], sizeof(query) - len, "%s > 0 AND %s >= expireDate;",
+		gDatabase.Format(query[len], sizeof(query) - len, "%s > 0 AND %s >= expireDate;",
 			SQLITE_EXPIRE_DATE_TO_TIMESTAMP, SQLITE_CURRENT_DATE_EXPRESSION);
 	}
 	else
 	{
-		FormatEx(query[len], sizeof(query) - len, "%s > 0 AND %s >= expireDate;",
+		gDatabase.Format(query[len], sizeof(query) - len, "%s > 0 AND %s >= expireDate;",
 			MYSQL_EXPIRE_DATE_TO_TIMESTAMP, MYSQL_CURRENT_DATE_EXPRESSION);
 	}
 
 	database.Query(OnQueryCompleted, query);
-	FormatEx(query, sizeof(query), "SELECT ip, %s AS expireTimestamp FROM IPBan WHERE ip != '';",
+	gDatabase.Format(query, sizeof(query), "SELECT ip, %s AS expireTimestamp FROM IPBan WHERE ip != '';",
 		isSQLite ? SQLITE_EXPIRE_DATE_TO_TIMESTAMP : MYSQL_EXPIRE_DATE_TO_TIMESTAMP);
 	database.Query(OnIPBansLoaded, query);
 	ServerCommand("exec banned_ip");
