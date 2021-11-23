@@ -16,16 +16,17 @@ public Plugin myinfo =
 
 #define IP_COMMAND_SLOT_WARNING(%1) "[SM] Please, specify an IP address to %s (slot indices not allowed)", #%1
 
-#define MAX_IP_SIZE        16
-#define SQL_MAX_QUERY_SIZE 2048
-#define MAX_COUNTRY_SIZE   46
+#define MAX_IP_SIZE           16
+#define SQL_MAX_QUERY_SIZE    2048
+#define MAX_COUNTRY_CODE_SIZE 4
+#define MAX_COUNTRY_NAME_SIZE 46
 
 #define SQLITE_CURRENT_DATE_EXPRESSION  "DATETIME('NOW')"
 #define SQLITE_EXPIRE_DATE_TO_TIMESTAMP "STRFTIME('%s', expireDate) + 0"
 #define MYSQL_CURRENT_DATE_EXPRESSION   "NOW()"
 #define MYSQL_EXPIRE_DATE_TO_TIMESTAMP  "UNIX_TIMESTAMP(expireDate)"
 
-char gGeoIPCountryCodes[][] =
+char gGeoIPCountryCodes[][MAX_COUNTRY_CODE_SIZE] =
 {
 	"AP", "EU", "AND", "ARE", "AFG", "ATG", "AIA", "ALB", "ARM", "ANT",
 	"AGO", "AQ", "ARG", "ASM", "AUT", "AUS", "ABW", "AZE", "BIH", "BRB",
@@ -72,7 +73,7 @@ void AddIPBanListener()
 Action CmdBanIP(int client, const char[] command, int argsCount)
 {
 	char time[INT_MAX_DIGITS], ip[MAX_IP_SIZE], query[SQL_MAX_QUERY_SIZE],
-		countryCode[sizeof(gGeoIPCountryCodes[])], country[MAX_COUNTRY_SIZE];
+		countryCode[sizeof(gGeoIPCountryCodes[])], country[MAX_COUNTRY_NAME_SIZE];
 	GetCmdArg(1, time, sizeof(time));
 
 	if (GetCmdArg(2, ip, sizeof(ip)) > 0)
