@@ -9,7 +9,7 @@ public Plugin myinfo =
 	name = "IP Bans Syncer",
 	author = "AdRiAnIlloO",
 	description = "Syncs native SRCDS IP bans with a SQL database",
-	version = "1.1"
+	version = "1.2"
 }
 
 #define DATABASE_CONFIG_NAME "ip_bans"
