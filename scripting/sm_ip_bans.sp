@@ -9,7 +9,7 @@ public Plugin myinfo =
 	name = "IP Bans Syncer",
 	author = "AdRiAnIlloO",
 	description = "Syncs native SRCDS IP bans with a SQL database",
-	version = "1.2"
+	version = "1.3"
 }
 
 #define DATABASE_CONFIG_NAME "ip_bans"
@@ -72,7 +72,7 @@ void AddIPBanListener()
 
 Action CmdBanIP(int client, const char[] command, int argsCount)
 {
-	char time[INT_MAX_DIGITS], ip[MAX_IP_SIZE], query[SQL_MAX_QUERY_SIZE],
+	char time[INT_MAX_DIGITS + 1], ip[MAX_IP_SIZE], query[SQL_MAX_QUERY_SIZE],
 		countryCode[sizeof(gGeoIPCountryCodes[])], country[MAX_COUNTRY_NAME_SIZE];
 	GetCmdArg(1, time, sizeof(time));
 
@@ -170,7 +170,7 @@ void OnDatabaseConnectFinished(Database database, const char[] error, any data)
 	bool isSQLite = IsDatabaseSQLite();
 	int len = gDatabase.Format(query, sizeof(query), "CREATE TABLE IF NOT EXISTS IPBan"
 		... " (id INTEGER %s PRIMARY KEY NOT NULL, ip VARCHAR (%i) UNIQUE NOT NULL, country ",
-		isSQLite ? "" : "AUTO_INCREMENT", MAX_IP_SIZE - 1);
+		isSQLite ? NULL_STRING : "AUTO_INCREMENT", MAX_IP_SIZE - 1);
 
 	if (isSQLite)
 	{
