@@ -9,7 +9,7 @@ public Plugin myinfo =
 	name = "IP Bans Syncer",
 	author = "AdRiAnIlloO",
 	description = "Syncs native SRCDS IP bans with a SQL database",
-	version = "1.3"
+	version = "1.4"
 }
 
 #define DATABASE_CONFIG_NAME "ip_bans"
@@ -72,8 +72,8 @@ void AddIPBanListener()
 
 Action CmdBanIP(int client, const char[] command, int argsCount)
 {
-	char time[INT_MAX_DIGITS + 1], ip[MAX_IP_SIZE], query[SQL_MAX_QUERY_SIZE],
-		countryCode[sizeof(gGeoIPCountryCodes[])], country[MAX_COUNTRY_NAME_SIZE];
+	char time[INT_MAX_DIGITS + 1], ip[MAX_IP_SIZE], query[SQL_MAX_QUERY_SIZE], country[MAX_COUNTRY_NAME_SIZE],
+		countryCode[sizeof(gGeoIPCountryCodes[])], sqlCountryCode[sizeof(countryCode) * 2 + 1] = "NULL";
 	GetCmdArg(1, time, sizeof(time));
 
 	if (GetCmdArg(2, ip, sizeof(ip)) > 0)
@@ -87,10 +87,14 @@ Action CmdBanIP(int client, const char[] command, int argsCount)
 		}
 		else if (gDatabase != null)
 		{
-			GeoipCode3(ip, countryCode);
+			if (GeoipCode3(ip, countryCode))
+			{
+				gDatabase.Format(sqlCountryCode, sizeof(sqlCountryCode), "'%s'", countryCode);
+			}
+
 			bool isSQLite = IsDatabaseSQLite();
 			int len = gDatabase.Format(query, sizeof(query),
-				"INSERT INTO IPBan (ip, country, creationDate, expireDate) VALUES ('%s', '%s', ", ip, countryCode),
+				"INSERT INTO IPBan (ip, country, creationDate, expireDate) VALUES ('%s', %!s, ", ip, sqlCountryCode),
 				expireTimestamp = (minutes > 0) ? GetTime() + minutes * 60 : 0;
 
 			if (isSQLite)
